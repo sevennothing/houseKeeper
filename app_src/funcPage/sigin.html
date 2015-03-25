@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>注册</title>
+		<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../css/mui.min.css">
+		<script type="text/javascript" src="../js/common.js"></script>
+		<script type="text/javascript">
+			var i=1,gentry=null,w=null;
+			var hl=null,le=null,de=null,ie=null;
+			var unv=true;
+			function plusReady() {
+				// 获取摄像头目录对象
+				plus.io.resolveLocalFileSystemURL("_doc/", function(entry) {
+					entry.getDirectory("camera", {
+						create: true
+					}, function(dir) {
+						gentry = dir;
+						updateHistory();
+					}, function(e) {
+						outSet("Get directory \"camera\" failed: " + e.message);
+					});
+				}, function(e) {
+					outSet("Resolve \"_doc/\" failed: " + e.message);
+				});
+			}
+			if (window.plus) {
+				plusReady();
+			} else {
+				document.addEventListener("plusready", plusReady, false);
+			}
+			// 监听DOMContentLoaded事件
+			document.addEventListener("DOMContentLoaded", function() {
+				// 获取DOM元素对象
+				hl = document.getElementById("history");
+				le = document.getElementById("empty");
+				de = document.getElementById("display");
+				if (ie = document.getElementById("index")) {
+					ie.onchange = indexChanged;
+				}
+				// 判断是否支持video标签
+				unv = !document.createElement('video').canPlayType;
+			}, false);
+		
+			function changeIndex() {
+				outSet("选择摄像头：");
+				ie.focus();
+			}
+		
+			function indexChanged() {
+					de.innerText = ie.options[ie.selectedIndex].innerText;
+					i = parseInt(ie.value);
+					outLine(de.innerText);
+				}
+				// 拍照
+		
+			function getImage() {
+					outSet("开始拍照：");
+					var bts=[{title:"拍照"},{title:"相册"}];
+					plus.nativeUI.actionSheet({title:"头像获取",cancel:"取消",buttons:bts},
+						function(e){
+							//outLine( "选择了\""+((e.index>0)?bts[e.index-1].title:"取消")+"\"");
+							srcPath = "";
+							photo = document.getElementById("photo");
+							if(e.index == 1){
+								var cmr = plus.camera.getCamera();
+								cmr.captureImage(function(p) {
+									//outLine("成功：" + p);					
+									plus.io.resolveLocalFileSystemURL(p, function(entry) {										
+										photo.src = entry.fullPath;
+										//createItem(entry);
+									}, function(e) {
+										outLine("读取拍照文件错误：" + e.message);
+									});
+								}, function(e) {
+									outLine("失败：" + e.message);
+								}, {
+									filename: "_doc/camera/",
+									index: i
+								});
+							}else if(e.index == 2){
+								// choice photo
+								outSet("从相册中选择图片:");
+							    plus.gallery.pick(function(path){
+							    	outLine(path);
+							  		photo.src = path;
+							    }, function ( e ) {
+							    	outSet( "取消选择图片" );
+							    }, {filter:"image"} );
+							}
+							
+						}
+					);
+					
+	
+					
+				}
+				
+				// 显示文件
+			function displayFile(li) {
+					if (w) {
+						outLine("重复点击！");
+						return;
+					}
+					if (!li || !li.entry) {
+						ouSet("无效的媒体文件");
+						return;
+					}
+					var name = li.entry.name;
+					var suffix = name.substr(name.lastIndexOf('.'));
+					var url = "";
+					if (suffix == ".mov" || suffix == ".3gp" || suffix == ".mp4" || suffix == ".avi") {
+						//if(unv){plus.runtime.openFile("_doc/camera/"+name);return;}
+						url = "/plus/camera_video.html";
+					} else {
+						url = "/plus/camera_image.html";
+					}
+					w = plus.webview.create(url, url, {
+						scrollIndicator: 'none',
+						scalable: true,
+						bounce: "all"
+					});
+					w.addEventListener("loaded", function() {
+						w.evalJS("loadMedia('" + li.entry.toLocalURL() + "')");
+						//w.evalJS( "loadMedia(\""+"http://localhost:13131/_doc/camera/"+name+"\")" );
+					}, false);
+					w.addEventListener("close", function() {
+						w = null;
+					}, false);
+					w.show("slide-in-right", 300);
+				}
+				// 添加播放项
+		
+			function createItem(entry) {
+					var li = document.createElement("li");
+					li.className = "ditem";
+					li.innerHTML = '<span class="iplay"><font class="aname"></font><br/><font class="ainf"></font></span>';
+					li.setAttribute("onclick", "displayFile(this);");
+					hl.insertBefore(li, le.nextSibling);
+					li.querySelector(".aname").innerText = entry.name;
+					li.querySelector(".ainf").innerText = "...";
+					li.entry = entry;
+					updateInformation(li);
+					// 设置空项不可见
+					le.style.display = "none";
+				}
+				
+				// 清除历史记录
+		
+			function cleanHistory() {
+				hl.innerHTML = '<li id="empty" class="ditem-empty">无历史记录</li>';
+				le = document.getElementById("empty");
+				// 删除音频文件
+				outSet("清空拍照录像历史记录：");
+				gentry.removeRecursively(function() {
+					// Success
+					outLine("成功！");
+				}, function(e) {
+					ouline("失败：" + e.message);
+				});
+			}
+		</script>
+</head>
+	<header class="mui-bar mui-bar-nav">
+			<button id="returnBtn" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left">
+				<span class="mui-icon mui-icon-left-nav"></span>
+				返回
+			</button>
+			<h1 class="mui-title">注册</h1>
+		</header>
+		
+	<body>
+		<div class="mui-content">
+			<form class="mui-input-group  mui-table-view mui-grid-view" method="post">
+				<div class="mui-table-view-cell  mui-col-xs-12">
+					<div class="button" onclick="getImage();">
+						<img id="photo" src="#" style="width: 100px;height: 100px;">
+					</div>
+					拍照
+				</div>
+				<div>
+					<div class="mui-input-row mui-table-view-cell  mui-col-xs-5">
+						<span class="mui-badge " >男</span>
+					</div>
+					<div class="mui-input-row mui-table-view-cell  mui-col-xs-5">
+						<span class="mui-badge" >女</span>
+					</div>
+					
+				</div>
+				<div class="mui-input-row mui-table-view-cell mui-col-xs-12">
+					<label>用户名:</label>
+					<input id="input_uname" type="text" placeholder="请输入用户名" />
+				</div>
+				<br>
+				<div class="mui-input-row mui-table-view-cell mui-col-xs-12">
+					<label>密码:</label>
+					<input id="input_pwd" class="mui-input-clear" type="password" placeholder="请输入密码" />
+				</div>
+				<div class="mui-input-row mui-table-view-cell mui-col-xs-12">
+					<label>密码确认:</label>
+					<input id="input_pwd_retry" class="mui-input-clear" type="password" placeholder="请确认密码" />
+				</div>
+				<div class="mui-input-row mui-table-view-cell mui-col-xs-12">
+					<label>邮箱:</label>
+					<input id="input_email" class="mui-input-clear" type="email" placeholder="电子邮件地址" />
+				</div>
+				<div class="mui-button-row  mui-col-xs-10"  style="margin: 20px 40px;">
+					<button type="button" class="mui-btn mui-btn-positive mui-btn-block">提交注册</button>
+				</div>
+			</form>
+		</div>
+		<div id="output">
+			注册提示
+	    </div>
+
+	</body>
+	<script src="../js/mui.min.js"></script>
+	<script src="../js/app.js"></script>
+	<script>
+		mui.init();
+	</script>
+	<script>
+	document.getElementById("returnBtn").addEventListener('tap',function(){
+			  	location.href="login.html";
+			  });
+	</script>
+	
+</html>

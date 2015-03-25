@@ -1,0 +1,37 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+		<meta name="HandheldFriendly" content="true"/>
+		<meta name="MobileOptimized" content="320"/>
+		<title></title>
+		<script type="text/javascript" src="../js/common.js"></script>
+		<link rel="stylesheet" href="../css/common.css" type="text/css" charset="utf-8"/>
+
+		<script type="text/javascript">
+			// H5 plus事件处理
+			function plusReady(){			
+				var imgUrl = plus.webview.currentWebview().imgUrl;
+			  	var imgShow = document.getElementById("dest_img");
+			  	imgShow.src = imgUrl;
+			    //关闭等待框
+			    plus.nativeUI.closeWaiting();
+			    //显示当前页面
+			    plus.currentWebview.show();
+			    
+			}
+			if(window.plus){
+				plusReady();
+			}else{
+				document.addEventListener("plusready",plusReady,false);
+			}
+		</script>
+	</head>
+	<body style="margin:0;padding:0;width:100%;height:100%;text-align:center;">
+		<img id="dest_img" width="400px" height="500px">
+		<div style="width:100%;position:fixed;bottom:0;">
+			<div class="button" onclick="back()" style="color: #2AC845;">关　闭</div>
+		</div>
+	</body>
+</html>

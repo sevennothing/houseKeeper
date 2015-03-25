@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>个人中心</title>
+		<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../css/mui.min.css">	    
+	    <script src="../js/mui.min.js"></script>
+		<script src="../js/app.js"></script>
+		<script>
+			function plusReady(){
+				var uname = plus.storage.getItem('uname');
+				var email = plus.storage.getItem('email');
+				var pettyHead = plus.storage.getItem('prettyHead');
+				if(uname === ''){
+					alert('uname=?')
+				}
+				document.getElementById('photo').src = pettyHead;
+				document.getElementById('offCanvas_uname').textContent = "用户名：" + uname;
+				document.getElementById('offCanvas_email').textContent = "邮    箱：" + email;
+		
+			}
+			if(window.plus){
+				plusReady();
+			}else{
+				document.addEventListener('plusready',plusReady,false);
+			}
+			
+			mui.init();
+		</script>
+	</head>
+	<body>
+		<header class="mui-bar mui-bar-nav">
+			<button id="returnBtn" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left">
+				<span class="mui-icon mui-icon-left-nav"></span>
+				返回
+			</button>
+			<button id="setBtn" class="mui-btn mui-btn-link mui-btn-nav mui-pull-right">
+				设置
+			</button>
+			<h1 class="mui-title">个人中心</h1>
+		</header>
+		
+		<div class="mui-content">
+		<div class="mui-table-view-cell  mui-col-xs-12" align="center">
+			<img id="photo" src="#" style="width: 100px;height: 100px;">
+		</div>
+		<ul class="mui-table-view mui-table-view-chevron">
+			<li class="mui-table-view-divider">个人基本信息</li>
+			<li id="offCanvas_uname" class="mui-table-view-cell">
+				用户名：
+			</li>
+			<li id="offCanvas_email" class="mui-table-view-cell">
+				邮    箱：
+			</li>
+			<li id="offCanvas_status" class="mui-table-view-cell">
+				状态：散兵游勇
+			</li>
+	
+		</ul>
+	
+		<ul class="mui-table-view mui-table-view-chevron">
+			<li class="mui-table-view-divider">头衔</li>
+			<li id="offCanvas_help" class="mui-table-view-cell">
+				网络达人
+			</li>
+		</ul>
+
+</div>
+		
+	</body>
+	<script>
+		document.getElementById("returnBtn").addEventListener('tap',function(){
+			location.href="../index.html";
+		});
+		document.getElementById("setBtn").addEventListener('tap',function(){
+			location.href="setting.html";
+		});
+	</script>
+	
+</html>
