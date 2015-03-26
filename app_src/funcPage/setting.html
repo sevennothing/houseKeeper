@@ -10,7 +10,48 @@
 	    <script src="../js/mui.min.js"></script>
 		<script src="../js/app.js"></script>
 		<script>
-			mui.init();
+			function plusReady(){
+				// 隐藏滚动条
+				plus.webview.currentWebview().setStyle({scrollIndicator:'none'});
+				// Android处理返回键
+				plus.key.addEventListener('backbutton',function(){
+					if(confirm('确认退出？')){
+						plus.runtime.quit();
+					}
+				},false);
+				//compatibleAdjust();
+				
+			}
+			if(window.plus){
+				plusReady();
+			}else{
+				document.addEventListener('plusready',plusReady,false);
+			}
+			
+			function clearLocalData(){
+				var gentry=null;
+				plus.storage.clear();
+				// 获取摄像头目录对象
+				plus.io.resolveLocalFileSystemURL( "_doc/", function ( entry ) {
+					entry.getDirectory( "camera", {create:true}, function ( dir ) {
+						gentry = dir;
+						gentry.removeRecursively( function () {
+							// Success
+							alert("清除成功");
+							}, function ( e ) {
+								alert("清除失败: " + e.message);
+							});
+				
+					}, function ( e ) {
+						alert( "Get directory \"camera\" failed: "+e.message );
+					} );
+				}, function ( e ) {
+					alert( "Resolve \"_doc/\" failed: "+e.message );
+				} );
+				
+				
+				
+			}
 		</script>
 	</head>
 	
@@ -44,6 +85,9 @@
 					<div class="mui-switch mui-active">
 						<div class="mui-switch-handle"></div>
 					</div>
+				</li>
+				<li class="mui-table-view-cell button" onclick="clearLocalData()">
+					清除本地数据
 				</li>
 			
 			</ul>

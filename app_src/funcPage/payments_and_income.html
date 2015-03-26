@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 	<head>
 		<meta charset="utf-8">
 		<title>创建收支</title>
@@ -12,12 +13,14 @@
 		<script src="../js/app.js"></script>
 		<script src="../js/tools.js"></script>
 		<script>
+			var type = 1;
 			window.onload = function(){
 			  //从服务器获取数据
 			  //业务数据获取完毕，并已插入当前页面DOM；
 			  //注意：若为ajax请求，则需将如下代码放在处理完ajax响应数据之后；
 			  mui.plusReady(function(){
 			  	var title = plus.webview.currentWebview().title;
+			  	type = plus.webview.currentWebview().type;
 			  	var pi_title = document.getElementById("pi_title");
 			  	pi_title.textContent = title;
 			    //关闭等待框
@@ -27,7 +30,7 @@
 			  });
 			 
 			}
-			var i=1,gentry=null,w=null;
+			var i=1,gentry=null,bill=null,w=null;
 			var hl=null,le=null,de=null,ie=null;
 			var unv=true;
 			
@@ -43,9 +46,22 @@
 					}, function ( e ) {
 						outSet( "Get directory \"camera\" failed: "+e.message );
 					} );
+					
 				}, function ( e ) {
 					outSet( "Resolve \"_doc/\" failed: "+e.message );
 				} );
+				
+				plus.io.resolveLocalFileSystemURL( "_doc/", function ( entry ) {
+					entry.getDirectory( "bill", {create:true}, function ( dir ) {
+						bill = dir;
+					}, function ( e ) {
+						outSet( "Get directory \"bill\" failed: "+e.message );
+					} );
+					
+				}, function ( e ) {
+					outSet( "Resolve \"_doc\" failed: "+e.message );
+				} );
+				
 			}
 			if(window.plus){
 				plusReady();
@@ -185,42 +201,77 @@
 			}
 			
 			function saveData(){
+				/*
+				//check data valid
+				var reg = /^20\d{2}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[0-1])$/;
+				if(!reg.test(costDate.value)){
+					alert('日期格式不正确，请输入年月日，例如20150310');
+					return;
+				}*/
 				//保存数据
 				var id = genCostIncomeId('test');
 				var ciobj = {
 					"id":id,
+					"type":type,
 					"abstract": abstract.value,
+					"desc": desc.value,
 					"keys": keys.value,
 					"cost":cost.value,
-					"costDate":costDate.value
+					"costDate":costDate.value,
+					"billImg":[],
+					"createTime":new Date().toISOString()
 				};
+				//成功后处理
+			  	var reader = gentry.createReader();
+			  	reader.readEntries( function ( entries ) {
+			  		var end = 0;
+			  		for ( var i in entries ) {
+			  			if ( entries[i].isFile ) {
+							//移动数据
+							entries[i].moveTo(bill,entries[i].name,
+								function ( e ) {
+									ciobj.billImg.push(bill.fullPath + '/' + entries[i].name);
+									console.log( "移动文件到：" + ciobj.billImg);
+									end++;
+									if(end === entries.length){
+							  			plus.storage.setItem( id, JSON.stringify(ciobj));
+							  			cleanHistory();
+										alert("创建成功");
+						  			}
+								},
+								function ( e ) {
+									console.log( "移动文件失败" + e.message);
+									end++;
+									if(end === entries.length){
+							  			plus.storage.setItem( id, JSON.stringify(ciobj));
+										alert("创建失败");
+						  			}
+								} );
+							}
+			  			else{
+			  				end++;
+			  				if(end === entries.length){
+							  	plus.storage.setItem( id, JSON.stringify(ciobj));
+							  	cleanHistory();
+								alert("创建成功");
+						  	}
+			  			}	
+			  		}  		
+			  	});
 				
-				plus.storage.setItem( id, JSON.stringify(ciobj));
-				plus.storage.setItem( "uname", "jun");
-				var keyNames=[];
-				var values=[];
-				var numKeys=plus.storage.getLength();
-				outSet( "数据存储成功，存储了"+numKeys+"条数据；" );
-				for(var i=0; i<numKeys; i++) {
-					keyNames[i] = plus.storage.key(i);
-					values[ i] = plus.storage.getItem(keyNames[i]);
-					outLine(keyNames[i] + ":" + values[i]);
-				}
-				//plus.storage.clear();
 			}
-			
 		</script>
-		
+
 	</head>
+
 	<body>
 		<header class="mui-bar mui-bar-nav">
 			<button id="returnBtn" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left">
-				<span class="mui-icon mui-icon-left-nav"></span>
-				返回
+				<span class="mui-icon mui-icon-left-nav"></span> 返回
 			</button>
 			<h1 id="pi_title" class="mui-title">webview.title</h1>
 		</header>
-		
+
 		<div class="mui-content">
 			<form class="mui-input-group  mui-table-view mui-grid-view">
 				<div class="mui-input-row mui-table-view-cell mui-col-xs-10">
@@ -255,25 +306,20 @@
 					<div class="button button-waring" onclick="cleanHistory();">清空历史记录</div>
 					<br/>
 				</div>
-				
-				
-				<div class="mui-button-row  mui-col-xs-10"  style="margin: 20px 40px;">
+
+				<div class="mui-button-row  mui-col-xs-10" style="margin: 20px 40px;">
 					<button type="button" class="mui-btn mui-btn-positive mui-btn-block" onclick="saveData()">创建</button>
 				</div>
 			</form>
-			
-			<div id="output">
-			提示
-	    	</div>
-			
+
 		</div>
-		
+
 	</body>
-	
+
 	<script>
-	document.getElementById("returnBtn").addEventListener('tap',function(){
-			  	location.href="../index.html";
-			  });
+		document.getElementById("returnBtn").addEventListener('tap',function(){
+				  	location.href="../index.html";
+				  });
 	</script>
-	
+
 </html>

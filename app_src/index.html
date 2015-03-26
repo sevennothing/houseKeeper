@@ -12,12 +12,14 @@
 		<script type="text/javascript" charset="utf-8">
 			// DOMContentLoaded事件处理
 			var _domReady=false;
-			var bi=null,bit=null;
+			var bi=null,bit=null,logo=null;
 			document.addEventListener('DOMContentLoaded',function(){
 				_domReady=true;
 				//compatibleAdjust();
 				bi=document.getElementById("baseInfo");
-				bit = document.getElementById("baseInfoTip")
+				bit = document.getElementById("baseInfoTip");
+				logo = document.getElementById("app_logo");
+				nav_tool = document.getElementById("nav_tool");
 			},false);
 			
 			//取消浏览器的所有事件，使得active的样式在手机上正常生效
@@ -41,23 +43,45 @@
 				},false);
 				//compatibleAdjust();
 				var uname = plus.storage.getItem('uname');
-				
-				if(uname !== ''){
+				var version = plus.storage.getItem('version');
+				if(uname !== '' && uname !== null){
 					//alert('uname=' + uname)
 					document.getElementById('loginBtn').style.display="none";
+					
+					var li = document.createElement("li");
+					li.className = "ditem";
+					li.id = "user_info";
+					var htmlText = '<div class="mui-table-view mui-grid-view" >' +
+									'<div class="mui-table-view-cell mui-col-xs-8" >' + 
+									 '<img id="img_photo" src="#" width="60px" height="60px">';
+									 '</div>' +
+									'<div class="mui-table-view-cell mui-col-xs-4" >' + 
+									 '<p>' + uname  + '</p>' +
+									 '</div>' +
+									 '</div>';
+					
+					li.innerHTML = htmlText;
+					nav_tool.insertBefore( li, logo.nextSibling );					
+					
+				}
+				
+				if(version !== '' && version !== null){
+					document.getElementById('show_version').textContent = version ;
+				}else{
+					//TODO: get version
 				}
 				// 获取所有的收支数据
 				var keyName;
 				var value;
+				var ciobj = {};
 				var numKeys=plus.storage.getLength();
 				for(var i=0; i<numKeys; i++) {
 					keyName = plus.storage.key(i);
 					if(keyName.substring(0,2) === 'CI'){
-						value = plus.storage.getItem(keyNames[i]);
-						
+						value = plus.storage.getItem(keyName);
+						ciobj = JSON.parse(value);
+						createItem(ciobj);
 					}
-					
-					outLine(keyNames[i] + ":" + values[i]);
 				}
 				
 			}
@@ -70,12 +94,26 @@
 			// 添加展示
 			function createItem( entry ) {
 				var li = document.createElement("li");
+				//alert((entry.type === '1')  ? '支出' : '收入')
+				var typeStr = (entry.type === '1')  ? '支出' : '收入';
+				var dataStr = "昨天";
+				dataStr = entry.costDate;
 				li.className = "ditem";
-				var htmlText = '<div>' + entry.id + '<br></div>' + '<div>' + entry.desc + '<br></div>';
+				var htmlText = '<div  class="mui-table-view mui-grid-view" >' + 
+								  '<div class="mui-table-view-cell mui-col-xs-3" >' + 
+									 '<p>' + dataStr  + '</p>' +
+								  '</div>' + 
+								  '<div class="mui-table-view-cell mui-col-xs-4" >' + 
+									 '<p>' + typeStr + '  ' + entry.cost + '元' + '</p>' +
+								  '</div>' + 
+								  '<div class="mui-table-view-cell mui-col-xs-5" >' + 
+									 '<p>' + entry.abstract + '</p>' + 
+								   '</div>' + 
+								'</div>';
 				li.innerHTML = htmlText;
-				hl.insertBefore( li, bit.nextSibling );	
+				bi.insertBefore( li, bit.nextSibling );	
 				li.entry = entry;
-				updateInformation( li );
+				
 			}
 			
 			
@@ -90,10 +128,11 @@
 				<div id="offCanvasSideScroll" class="mui-scroll-wrapper">
 					<div class="mui-scroll">
 						<div class="title" style="margin: auto; color: #4CD964;" align="center">菜单</div>
-						<ul class="mui-table-view mui-table-view-chevron mui-table-view-inverted">
-							<li class="mui-table-view-cell">
-								<img id="img_logo" src="img/robot.png" width="80px" height="80px">
+						<ul id="nav_tool" class="mui-table-view mui-table-view-chevron mui-table-view-inverted">
+							<li id="app_logo" class="mui-table-view-cell">
+								<img id="img_logo" src="img/robot.png" width="40px" height="40px">
 							</li>
+							
 							<li class="mui-table-view-cell">
 								<a class="mui-navigate-right" href="index.html">
 
@@ -126,6 +165,15 @@
 								<a class="mui-navigate-right" href="funcPage/setting.html">
 
 									设置
+
+								</a>
+							</li>
+							
+							<li class="mui-table-view-cell">
+								<a class="mui-navigate-right">
+
+									版本 
+									<span id="show_version" class="mui-badge mui-badge-blue">V1.0</span>
 
 								</a>
 							</li>
@@ -235,7 +283,8 @@
 		    url: 'funcPage/payments_and_income.html', 
 		    id:'funcPage/payments_and_income.html',
 		    extras:{
-		      title:'创建收入条目'
+		      title:'创建收入条目',
+		      type:0
 		    }
 		  });
 		});
@@ -245,7 +294,8 @@
 		    url: 'funcPage/payments_and_income.html', 
 		    id:'funcPage/payments_and_income.html',
 		    extras:{
-		      title:'创建支出条目'
+		      title:'创建支出条目',
+		      type:'1'
 		    }
 		  });
 		});
