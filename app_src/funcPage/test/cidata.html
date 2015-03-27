@@ -19,7 +19,7 @@
 					"desc": "测试用描述" + i,
 					"keys": i,
 					"cost": i,
-					"costDate":"20150" + (i%3 + 1) + (i%31 + 1),
+					"costDate":"20150" + (i%3 + 1) + '0' + (i%9 + 1),
 					"createTime":new Date().toISOString()
 					};
 					var keys = ciobj.id;
@@ -35,6 +35,7 @@
 					"uname":"jun",
 					"email":"licj@email.com",
 					"cellPhone":"18200000023",
+					"login":"1",
 					"loginTime":new Date().toISOString(),
 					"version":	"V0.0.1"
 				};
@@ -100,7 +101,7 @@
 		<div id="dcontent" class="dcontent">
 			<br/>
 			<ul class="dlist">
-	            <li class="ditem" onclick="setItemFun(10)">插入1000条收支数据</li>
+	            <li class="ditem" onclick="setItemFun(4)">插入4条收支数据</li>
 	            <li class="ditem" onclick="setUserItemFun()">插入用户数据</li>
 	            <li class="ditem" onclick="getAllItem()">查询所有数据</li>
 	            <li class="ditem" onclick="clearAllItem()">清除所有内容</li>

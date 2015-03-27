@@ -44,10 +44,10 @@
 				//compatibleAdjust();
 				var uname = plus.storage.getItem('uname');
 				var version = plus.storage.getItem('version');
-				if(uname !== '' && uname !== null){
+				var login = plus.storage.getItem("login");
+				if(uname !== '' && uname !== null && login === "1"){
 					//alert('uname=' + uname)
 					document.getElementById('loginBtn').style.display="none";
-					
 					var li = document.createElement("li");
 					li.className = "ditem";
 					li.id = "user_info";
@@ -63,6 +63,8 @@
 					li.innerHTML = htmlText;
 					nav_tool.insertBefore( li, logo.nextSibling );					
 					
+				}else{
+					document.getElementById('stepBtn').style.display="none";
 				}
 				
 				if(version !== '' && version !== null){
@@ -113,7 +115,6 @@
 				li.innerHTML = htmlText;
 				bi.insertBefore( li, bit.nextSibling );	
 				li.entry = entry;
-				
 			}
 			
 			
@@ -199,6 +200,10 @@
 						登录
 						<span class="mui-icon mui-icon-right-nav"></span>
 					</button>
+					<button id="stepBtn" class="mui-btn mui-btn-link mui-btn-nav mui-pull-right">
+						同步数据
+						<span class="mui-icon mui-icon-right-nav"></span>
+					</button>
 
 					<h1 class="mui-title">主页</h1>
 
@@ -210,7 +215,6 @@
 							<div class="">
 								<ul id="baseInfo" class="mui-table-view mui-table-view-chevron">
 									<li id="baseInfoTip"class="mui-table-view-divider">基本情况:</li>
-									
 								</ul>
 								
 							</div>
@@ -221,7 +225,6 @@
 								<div id="create_payment" class="mui-bar-nav mui-button-row mui-btn-blue" style="margin-top: 20px;">
 									<h3>创建支出</h3>
 								</div>
-							
 						</div>
 
 					</div>
@@ -276,6 +279,9 @@
 	<script>
 		document.getElementById("loginBtn").addEventListener('tap', function() {
 			location.href = "funcPage/login.html";
+		});
+		document.getElementById("stepBtn").addEventListener('tap', function() {
+			alert('已完成数据同步');
 		});
 		document.getElementById('create_income').addEventListener('tap', function() {
 		  //打开关于页面
