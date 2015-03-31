@@ -122,7 +122,7 @@ func (mu *MysqlUser) InsertUser(uinfo User) (User, error){
 
 
 func (mu *MysqlUser) FindUser(login string,uid string) ([]byte, error){
-	c := mu.connectInit();
+	c := mu.connectInit()
 	defer c.Close()
 	byLogin, err := c.Prepare("SELECT * FROM users WHERE login = ?")
 	if err != nil {
@@ -141,11 +141,7 @@ func (mu *MysqlUser) FindUser(login string,uid string) ([]byte, error){
 
 	var rowdata []byte
 	if login != "" {
-		//byLogin.QueryRow(login).Scan(&rowdata)
-		rows := byLogin.QueryRow(login)
-		if rows.Next() {
-						c.Error("unexpected data in empty table")
-								}
+		byLogin.QueryRow(login).Scan(&rowdata)
 	}else if uid != "" {
 		byUid.QueryRow(uid).Scan(&rowdata)
 	}else{
@@ -154,4 +150,17 @@ func (mu *MysqlUser) FindUser(login string,uid string) ([]byte, error){
 	fmt.Println(rowdata)
 	return rowdata, nil
 }
+
+func (mu *MysqlUser) UpdateUser(uid string) (error) {
+	c := mu.connectInit()
+	defer c.Close()
+
+	_,err := c.Prepare("UPDATE users SET last_login_on=? where id=?")
+
+
+
+
+}
+
+
 

@@ -1,4 +1,3 @@
-
 /**
 *  Copyright 2015,
 *  Filename: users_db.go
@@ -42,26 +41,26 @@ import (
 const uidLength = 16
 
 type User struct {
-	ID	string `json:id`
-	Login	string	`json:login`	// login name
-	FirstName	string	`json:firstName`
-	LastName	string	`json:lastName`
-	Mail	string	`json:mail`
-	Gender	string	`json:gender`
-	Password	string	`json:password`	//hashed password
-	Type	string	`json:Type`	//user type: family, user
-	Family	string	`json:Type` //familyID
+	ID					string `json:id`
+	Login				string	`json:login`	// login name
+	FirstName		string	`json:firstName`
+	LastName		string	`json:lastName`
+	Mail				string	`json:mail`
+	Gender			string	`json:gender`
+	Password		string	`json:password`	//hashed password
+	Type				string	`json:Type`	//user type: family, user
+	Family			string	`json:Type` //familyID
 	LastLoginOn	string	`json:lastLoginOn`
-	CreatedOn	string	`json:createdOn`
-	UpdatedOn	string	`json:updatedOn`
+	CreatedOn		string	`json:createdOn`
+	UpdatedOn		string	`json:updatedOn`
 
 }
 
 
 
 type family struct {
-	ID	string	`json:id`
-	Name	string	`json:name`
+	ID				string	`json:id`
+	Name			string	`json:name`
 	CreatedOn	string	`json:createdOn`
 	UpdatedOn	string	`json:updatedOn`
 }
@@ -122,7 +121,7 @@ func (mu *MysqlUser) InsertUser(uinfo User) (User, error){
 
 
 func (mu *MysqlUser) FindUser(login string,uid string) ([]byte, error){
-	c := mu.connectInit();
+	c := mu.connectInit()
 	defer c.Close()
 	byLogin, err := c.Prepare("SELECT * FROM users WHERE login = ?")
 	if err != nil {
@@ -149,5 +148,73 @@ func (mu *MysqlUser) FindUser(login string,uid string) ([]byte, error){
 	}
 	fmt.Println(rowdata)
 	return rowdata, nil
+}
+
+func (mu *MysqlUser) UpdateUser(uid string,firstname string,lastname string,mail string,gender string, lastlogin string, password string) (error) {
+	c := mu.connectInit()
+	defer c.Close()
+
+	updateLastLogin,err := c.Prepare("UPDATE users SET last_login_on=? where id=?")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer updateLastLogin.Close()
+
+	updateFirstName,err := c.Prepare("UPDATE users SET firstname =? where id=?")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer updateFirstName.Close()
+
+	updateLastName,err := c.Prepare("UPDATE users SET lastname=? where id=?")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer updateLastName.Close()
+
+	updateMail,err := c.Prepare("UPDATE users SET mail=? where id=?")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer updateMail.Close()
+
+	updateGender,err := c.Prepare("UPDATE users SET gender=? where id=?")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer updateGender.Close()
+
+
+	updatePassword,err := c.Prepare("UPDATE users SET password=? where id=?")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer updatePassword.Close()
+
+	updateUpdatedOn,err := c.Prepare("UPDATE users SET updated_on=? where id=?")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer updateUpdatedOn.Close()
+
+	if firstname != "" {
+		updateFirstName.Exec(firstname,uid)
+	}else if lastname != "" {
+		updateLastName.Exec(lastname,uid)
+	}else if mail != "" {
+		updateMail.Exec(mail,uid)
+	}else if gender != "" {
+		updateGender.Exec(mail,uid)
+	}else if password != "" {
+		updatePassword.Exec(password,uid)
+	}else if	lastlogin != "" {
+		updateLastLogin.Exec(lastlogin,uid)
+	}else {
+		fmt.Println("UpdateUser need params")
+		return errors.New("UpdateUser need params")
+		return fmt.Errorf("UpdateUser need params")
+	}
+	_,err := updateUpdatedOn.Exec(time.now(),uid)
+
 }
 

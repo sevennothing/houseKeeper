@@ -30,33 +30,29 @@ var globalUser	*usersdb.MysqlUser
 
 
 type sessionConfig	struct {
-	CookieName  string `json:cookieName`
-//	EnableSetCookie,omitempty   bool `json:enableSetCookie,omitempty`
-//	EnableSetCookiei\,omitempty   bool `json:enableSetCookie,omitempty`
-	EnableSetCookie   bool `json:enableSetCookie,omitempty`
-	Gclifetime  int `json:gclifetime`
-	MaxLifetime int `json:maxLifetime`
-	Secure  bool `json:secure`
-	SessionIDHashFunc string `json:sessionIDHashFunc`
-	SessionIDHashKey string `json:sessionIDHashKey`
-	CookieLifeTime int `json:cookieLifeTime`
-	ProviderConfig string `json:providerConfig`
+	CookieName				string	`json:cookieName`
+	EnableSetCookie   bool		`json:enableSetCookie,omitempty`
+	Gclifetime				int			`json:gclifetime`
+	MaxLifetime				int			`json:maxLifetime`
+	Secure						bool		`json:secure`
+	SessionIDHashFunc string	`json:sessionIDHashFunc`
+	SessionIDHashKey	string	`json:sessionIDHashKey`
+	CookieLifeTime		int			`json:cookieLifeTime`
+	ProviderConfig		string	`json:providerConfig`
 }
 
 func init(){
 	fmt.Println("Beego Seesion init");
 	cookieName := beego.AppConfig.String("cookiename")
 	sessionIDHashKey := beego.AppConfig.String("sessionIDHashKey")
-	jsonConfig := sessionConfig{CookieName:cookieName, 
-					//"EnableSetCookie,omitempty": true, 
-					//EnableSetCookie\,omitempty: true, 
-					EnableSetCookie: true, 
-					Gclifetime:3600, 
-					MaxLifetime: 3600, 
-					Secure: false, 
-					SessionIDHashFunc: "sha1", 
-					SessionIDHashKey: sessionIDHashKey, 
-					CookieLifeTime: 3600, 
+	jsonConfig := sessionConfig{CookieName:cookieName,
+					EnableSetCookie: true,
+					Gclifetime:3600,
+					MaxLifetime: 3600,
+					Secure: false,
+					SessionIDHashFunc: "sha1",
+					SessionIDHashKey: sessionIDHashKey,
+					CookieLifeTime: 3600,
 					ProviderConfig: ""}
 	b,_ :=json.Marshal(jsonConfig)
 	confStr := string(b)
@@ -102,9 +98,18 @@ func (this *ConsumerController) ConsumerLogin() {
 
 	//ckeck user login info
 	req_username := this.GetString("username")
-	//req_passwd := this.GetString("password")
+	req_passwd := this.GetString("password")
 	// find in mysql database with user
+	uinfo,err := globalUser.FindUser(req_username,"")
+	if err != nil {
+		this.Ctx.WriteString(err.Error());
+	}
 
+	if uinfo.Password == req_passwd {
+		// password access
+	}else {
+		// password auth faild	
+	}
 
 	username := sess.Get("username")
 	//isLogin := sess.Get("isLogin")
@@ -115,12 +120,6 @@ func (this *ConsumerController) ConsumerLogin() {
 	} else {
 		sess.Set("username", this.GetString("username"))
 		sess.Set("isLogin", true)
-	}
-
-
-	uinfo,err := globalUser.FindUser(req_username,"")
-	if err != nil {
-		this.Ctx.WriteString(err.Error());
 	}
 
 

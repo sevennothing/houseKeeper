@@ -125,7 +125,7 @@ func (this *ConsumerController) ConsumerLogin() {
 
 
 	//this.Ctx.WriteString("consumer login:" + this.GetString("username") + "databaseInfo:" + uinfo)
-	this.Ctx.WriteString("consumer login:" + this.GetString("username") + "databaseInfo:" + string(uinfo))
+	this.Ctx.WriteString("consumer login:" + this.GetString("username") + "\ndatabaseInfo:" + string(uinfo))
 }
 
 type user struct {

@@ -13,54 +13,11 @@ package main
 import (
 	"github.com/astaxie/beego"
 	_"./routers"
-	"github.com/astaxie/beego/session"
-	"encoding/json"
-	"fmt"
-	"strings"
 )
 
 
-type sessionConfig	struct {
-	CookieName  string `json:host`
-//	EnableSetCookie,omitempty   bool `json:enableSetCookie,omitempty`
-//	EnableSetCookiei\,omitempty   bool `json:enableSetCookie,omitempty`
-	EnableSetCookie   bool `json:enableSetCookie,omitempty`
-	Gclifetime  int `json:gclifetime`
-	MaxLifetime int `json:maxLifetime`
-	Secure  bool `json:secure`
-	SessionIDHashFunc string `json:sessionIDHashFunc`
-	SessionIDHashKey string `json:sessionIDHashKey`
-	CookieLifeTime int `json:cookieLifeTime`
-	ProviderConfig string `json:providerConfig`
-}
 
 
-var globalSessions *session.Manager
-
-func init(){
-	cookieName := beego.AppConfig.String("cookiename")
-	sessionIDHashKey := beego.AppConfig.String("sessionIDHashKey")
-	jsonConfig := sessionConfig{CookieName:cookieName, 
-					//"EnableSetCookie,omitempty": true, 
-					//EnableSetCookie\,omitempty: true, 
-					EnableSetCookie: true, 
-					Gclifetime:3600, 
-					MaxLifetime: 3600, 
-					Secure: false, 
-					SessionIDHashFunc: "sha1", 
-					SessionIDHashKey: sessionIDHashKey, 
-					CookieLifeTime: 3600, 
-					ProviderConfig: ""}
-	b,_ :=json.Marshal(jsonConfig)
-	confStr := string(b)
-	fmt.Println(confStr)
-	confStr = strings.Replace(confStr,"EnableSetCookie","EnableSetCookie,omitempty",-1)
-	fmt.Println(confStr)
-	//memory mysql redis or file
-	globalSessions, _ = session.NewManager("memory", confStr)
-	go globalSessions.GC()
-
-}
 func main() {
 		beego.Run()
 }
