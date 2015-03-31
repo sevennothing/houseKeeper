@@ -20,6 +20,7 @@
 
  func init(){
  	beego.Router("/",&controllers.MainController{})
-	beego.Router("/consumer/login", &controllers.ConsumerController{},"post:ConsumerLogin")
+	beego.Router("/consumer/login", &controllers.ConsumerController{},"*:ConsumerLogin")
+	beego.Router("/consumer/sigin", &controllers.ConsumerController{},"post:ConsumerSigin")
 
  }

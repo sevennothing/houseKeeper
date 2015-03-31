@@ -13,10 +13,11 @@ package main
 import (
 	"github.com/astaxie/beego"
 	_"./routers"
-	//"contrillers"
 )
 
 
+
+
 func main() {
-	beego.Run()
+		beego.Run()
 }
