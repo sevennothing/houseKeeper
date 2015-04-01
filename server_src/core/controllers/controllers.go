@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+//	"strconv"
+	"reflect"
 	"../models"
 )
 
@@ -30,15 +32,23 @@ var globalUser	*usersdb.MysqlUser
 
 
 type sessionConfig	struct {
-	CookieName				string	`json:cookieName`
-	EnableSetCookie   bool		`json:enableSetCookie,omitempty`
-	Gclifetime				int			`json:gclifetime`
-	MaxLifetime				int			`json:maxLifetime`
-	Secure						bool		`json:secure`
-	SessionIDHashFunc string	`json:sessionIDHashFunc`
+	CookieName			string	`json:cookieName`
+	EnableSetCookie		bool	`json:enableSetCookie,omitempty`
+	Gclifetime			int		`json:gclifetime`
+	MaxLifetime			int		`json:maxLifetime`
+	Secure				bool	`json:secure`
+	SessionIDHashFunc	string	`json:sessionIDHashFunc`
 	SessionIDHashKey	string	`json:sessionIDHashKey`
-	CookieLifeTime		int			`json:cookieLifeTime`
+	CookieLifeTime		int		`json:cookieLifeTime`
 	ProviderConfig		string	`json:providerConfig`
+}
+
+type session_cookie struct {
+	SessionID	string	`json:sessionID`
+	Username	string	`json:username`
+	FaildCnt	int		`json:faildCnt`
+	IsLogin		bool	`json:isLogin`
+
 }
 
 func init(){
@@ -72,7 +82,7 @@ type MainController struct {
 	beego.Controller
 }
 
-type ConsumerController struct {
+type UserController struct {
 	beego.Controller
 }
 
@@ -85,11 +95,11 @@ func (this *MainController) Get() {
 }
 
 
-func (this *ConsumerController) Get() {
+func (this *UserController) Get() {
 	this.Ctx.WriteString("GET: hello consumer login")
 }
 
-func (this *ConsumerController) ConsumerLogin() {
+func (this *UserController) UserLogin() {
 	sess,err := globalSessions.SessionStart(this.Ctx.ResponseWriter, this.Ctx.Request)
 	defer sess.SessionRelease(this.Ctx.ResponseWriter)
 	if err != nil {
@@ -101,38 +111,54 @@ func (this *ConsumerController) ConsumerLogin() {
 	req_passwd := this.GetString("password")
 	// find in mysql database with user
 	uinfo,err := globalUser.FindUser(req_username,"")
+	var isAuth  bool = false
 	if err != nil {
 		this.Ctx.WriteString(err.Error());
+		return
 	}
 
 	if uinfo.Password == req_passwd {
 		// password access
+		isAuth = true
 	}else {
 		// password auth faild	
 	}
 
-	username := sess.Get("username")
-	//isLogin := sess.Get("isLogin")
+	var faildCnt int = 0
 
-	fmt.Println(username)
+	if reflect.TypeOf(sess.Get("faildCnt")) != nil {
+		faildCnt = sess.Get("faildCnt").(int)
+	}
+
+	//fmt.Println(username)
 	if this.Ctx.Request.Method == "GET" {
 		fmt.Println("======")
 	} else {
-		sess.Set("username", this.GetString("username"))
-		sess.Set("isLogin", true)
+		sess.Set("username", req_username)
+		if !isAuth {
+			sess.Set("faildCnt", faildCnt + 1)
+		}else{
+			sess.Set("faildCnt", 0)
+		}
+		sess.Set("isLogin", isAuth)
 	}
+	username := sess.Get("username").(string)
+	isLogin := sess.Get("isLogin").(bool)
+	faildCnt = sess.Get("faildCnt").(int)
 
-
-	//this.Ctx.WriteString("consumer login:" + this.GetString("username") + "databaseInfo:" + uinfo)
-	this.Ctx.WriteString("consumer login:" + this.GetString("username") + "\ndatabaseInfo:" + string(uinfo))
+	var res = session_cookie{SessionID: sess.SessionID(),
+							Username: username,
+							 IsLogin: isLogin,
+							 FaildCnt: faildCnt}
+ 	jsonRes,_ := json.Marshal(res)
+	this.Ctx.WriteString(string(jsonRes))
 }
 
 type user struct {
-	Id     int
 	Name   string `valid:"Required; Range(5,10)"` // Name 不能为空并且以Bee开头
 	//Age    int    `valid:"Range(1, 140)"` // 1 <= Age <= 140，超出此范围即为不合法
-	Email  string `valid:"Email; MaxSize(100)"` // Email字段需要符合邮箱格式，并且最大长度不能大于100个字符
-	Mobile string `valid:"Mobile"` // Mobile必须为正确的手机号
+	Mail	string `valid:"Email; MaxSize(100)"` // Email字段需要符合邮箱格式，并且最大长度不能大于100个字符
+//	Mobile string `valid:"Mobile"` // Mobile必须为正确的手机号
 	//	IP     string `valid:"IP"` // IP必须为一个正确的IPv4地址
 }
 func (u *user) Valid(v *validation.Validation) {
@@ -142,22 +168,41 @@ func (u *user) Valid(v *validation.Validation) {
 	}
 }
 
-func (this *ConsumerController) ConsumerSigin() {
+func (this *UserController) UserSigin() {
 	var valid = validation.Validation{}
 	username := this.GetString("username")
 	password := this.GetString("password")
-	email := this.GetString("email")
+	mail := this.GetString("mail")
 	gender := this.GetString("gender")
-	head_photo := this.GetString("head_photo")
+	f,h,ferr := this.GetFile("head_photo")
+	if ferr != nil {
+		fmt.Println("getfile err ", ferr)
+	}
+	fmt.Println("filename:", h.Filename)
+	f.Close()
+	ferr = this.SaveToFile("UpLoadFile", "/home/licj/")
+	if ferr != nil {
+		fmt.Println("err:", ferr)
+	}
+	head_photo := ""
 
-	fmt.Printf("username=%s\npassword=%s\nemail=%s\ngender=%s\nhead_photo=%s\n",username,password,email,gender,head_photo)
-	u := user{Id:1,Name:username,Email:email,Mobile:"12322222322"}
+	//fmt.Printf("username=%s\npassword=%s\nmail=%s\ngender=%s\nhead_photo=%s\n",username,password,email,gender,head_photo)
+	u := user{
+				Name:username,
+				Mail:mail,
+			 }
 	_,err :=  valid.Valid(&u)
 	if err != nil{
 		fmt.Println(err)
-		this.Ctx.WriteString("error .....")
+		this.Ctx.WriteString(err.Error())
 	}else{
-		var user = usersdb.User{Login:username,FirstName:"",Mail:email,Gender:gender,Password:password}
+		var user = usersdb.User{Login:username,
+								FirstName:"",
+								LastName:"",
+								Mail:mail,
+								Gender:gender,
+								Password:password,
+								HeadPhoto:head_photo}
 		uinfo,err  := globalUser.InsertUser(user)
 		if err != nil {
 			this.Ctx.WriteString("user sigin error:" + err.Error())

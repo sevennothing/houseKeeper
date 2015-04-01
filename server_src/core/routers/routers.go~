@@ -14,13 +14,13 @@
  package routers
 
  import (
- 	"../controllers"
+	"../controllers"
 	"github.com/astaxie/beego"
  )
 
  func init(){
- 	beego.Router("/",&controllers.MainController{})
-	beego.Router("/consumer/login", &controllers.ConsumerController{},"post:ConsumerLogin")
-	beego.Router("/consumer/sigin", &controllers.ConsumerController{},"post:ConsumerSigin")
+	beego.Router("/",&controllers.MainController{})
+	beego.Router("/application/user/login", &controllers.UserController{},"*:ConsumerLogin")
+	beego.Router("/application/user/sigin", &controllers.UserController{},"post:ConsumerSigin")
 
  }

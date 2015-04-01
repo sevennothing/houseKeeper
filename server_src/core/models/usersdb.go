@@ -18,6 +18,7 @@
 		`last_login_on`	datetime,
 		`created_on`	datetime,
 		`updated_on`	datetime,
+		`head_photo`	varchar(255),
 		PRIMARY KEY (`id`)
 	) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 *
@@ -36,23 +37,25 @@ import (
 	"encoding/hex"
 	_ "github.com/go-sql-driver/mysql"
 	"fmt"
+	"errors"
 )
 
 const uidLength = 16
 
 type User struct {
-	ID					string `json:id`
-	Login				string	`json:login`	// login name
+	ID				string `json:id`
+	Login			string	`json:login`	// login name
 	FirstName		string	`json:firstName`
 	LastName		string	`json:lastName`
-	Mail				string	`json:mail`
+	Mail			string	`json:mail`
 	Gender			string	`json:gender`
 	Password		string	`json:password`	//hashed password
-	Type				string	`json:Type`	//user type: family, user
+	Type			string	`json:Type`	//user type: family, user
 	Family			string	`json:Type` //familyID
-	LastLoginOn	string	`json:lastLoginOn`
+	LastLoginOn		string	`json:lastLoginOn`
 	CreatedOn		string	`json:createdOn`
 	UpdatedOn		string	`json:updatedOn`
+	HeadPhoto		string	`json:head_photo`
 
 }
 
@@ -98,7 +101,7 @@ func (mu *MysqlUser) InsertUser(uinfo User) (User, error){
 	lastLoginOn := time.Now()
 	updatedOn := time.Now()
 	createdOn := time.Now()
-	_,err := c.Exec("INSERT INTO users VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+	_,err := c.Exec("INSERT INTO users VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
 						uinfo.ID,
 						uinfo.Login,
 						uinfo.FirstName,
@@ -110,7 +113,8 @@ func (mu *MysqlUser) InsertUser(uinfo User) (User, error){
 						uinfo.Family,
 						lastLoginOn,
 						createdOn,
-						updatedOn)
+						updatedOn,
+						uinfo.HeadPhoto)
 	if err != nil {
 		fmt.Println(err)
 		return uinfo,err
@@ -120,7 +124,7 @@ func (mu *MysqlUser) InsertUser(uinfo User) (User, error){
 }
 
 
-func (mu *MysqlUser) FindUser(login string,uid string) ([]byte, error){
+func (mu *MysqlUser) FindUser(login string,uid string) (User, error){
 	c := mu.connectInit()
 	defer c.Close()
 	byLogin, err := c.Prepare("SELECT * FROM users WHERE login = ?")
@@ -138,15 +142,37 @@ func (mu *MysqlUser) FindUser(login string,uid string) ([]byte, error){
 
 	defer byUid.Close()
 
-	var rowdata []byte
+	var rowdata = User{ID:"",
+					Login:"",
+					FirstName:"",
+					LastName:"",
+					Mail:"",
+					Gender:"",
+					Password:"",
+					Type:"",
+					Family:"",
+					LastLoginOn:"",
+					CreatedOn:"",
+					UpdatedOn:"",
+					HeadPhoto:""}
+
+
 	if login != "" {
-		byLogin.QueryRow(login).Scan(&rowdata)
+		err := byLogin.QueryRow(login).Scan(&rowdata.ID,&rowdata.Login,&rowdata.FirstName,&rowdata.LastName,&rowdata.Mail,&rowdata.Gender,&rowdata.Password,&rowdata.Type,&rowdata.Family,&rowdata.LastLoginOn,&rowdata.CreatedOn,&rowdata.UpdatedOn,&rowdata.HeadPhoto)
+		if err != nil {
+			fmt.Println("Error on FindUser: ", err.Error())
+		}
 	}else if uid != "" {
-		byUid.QueryRow(uid).Scan(&rowdata)
+		err := byUid.QueryRow(login).Scan(&rowdata.ID,&rowdata.Login,&rowdata.FirstName,&rowdata.LastName,&rowdata.Mail,&rowdata.Gender,&rowdata.Password,&rowdata.Type,&rowdata.Family,&rowdata.LastLoginOn,&rowdata.CreatedOn,&rowdata.UpdatedOn,&rowdata.HeadPhoto)
+		if err != nil {
+			fmt.Println("Error on FindUser: ", err.Error())
+		}
 	}else{
-		return nil,fmt.Errorf("username and uid must be define")
+		//return User{},fmt.Errorf("username and uid must be define")
+		return User{},errors.New("must be specify at least one parameter between uname and uid")
 	}
-	fmt.Println(rowdata)
+	//fmt.Println("rowdata =  ",rowdata)
+
 	return rowdata, nil
 }
 
@@ -214,7 +240,10 @@ func (mu *MysqlUser) UpdateUser(uid string,firstname string,lastname string,mail
 		return errors.New("UpdateUser need params")
 		return fmt.Errorf("UpdateUser need params")
 	}
-	_,err := updateUpdatedOn.Exec(time.now(),uid)
+
+	updateUpdatedOn.Exec(time.Now(),uid)
+
+	return nil
 
 }
 
