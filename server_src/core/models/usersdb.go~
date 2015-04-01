@@ -101,7 +101,7 @@ func (mu *MysqlUser) InsertUser(uinfo User) (User, error){
 	lastLoginOn := time.Now()
 	updatedOn := time.Now()
 	createdOn := time.Now()
-	_,err := c.Exec("INSERT INTO users VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+	_,err := c.Exec("INSERT INTO users VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
 						uinfo.ID,
 						uinfo.Login,
 						uinfo.FirstName,

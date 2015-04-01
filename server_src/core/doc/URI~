@@ -2,9 +2,11 @@
 /consumer
 
 /consumer/login
-POST
-username:
-password:
+    POST
+        username:
+        password:
+    GET(logout)
+        sid
 
 
 /consumer/sigin
@@ -21,9 +23,9 @@ gender:
 
 // Curl Test
 
- curl -d "username=li&password=123" http://localhost:8080/consumer/login
- curl -c cookie_log -b cookie_log -d "username=li&password=123" http://localhost:8080/consumer/login
- curl -c cookie_log -b cookie_log -G http://localhost:8080/consumer/login
+ curl -d "username=li&password=123" http://localhost:8080/application/user/login
+ curl -c cookie_log -b cookie_log -d "username=li&password=123" http://localhost:8080/application/user/login
+ curl -c cookie_log -b cookie_log -G http://localhost:8080/application/user/login
 
- curl -d "username=li&password=123&email=li@teset.com&head_photo=dsfasfdsadf&gender=male" http://localhost:8080/consumer/sigin
+ curl -d "username=li&password=123&email=li@teset.com&head_photo=dsfasfdsadf&gender=male" http://localhost:8080/application/user/sigin
 

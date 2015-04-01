@@ -25,8 +25,6 @@ import (
 	"../models"
 )
 
-//type usersdb models.usersdb
-
 var globalSessions *session.Manager
 var globalUser	*usersdb.MysqlUser
 
@@ -43,13 +41,7 @@ type sessionConfig	struct {
 	ProviderConfig		string	`json:providerConfig`
 }
 
-type session_cookie struct {
-	SessionID	string	`json:sessionID`
-	Username	string	`json:username`
-	FaildCnt	int		`json:faildCnt`
-	IsLogin		bool	`json:isLogin`
 
-}
 
 func init(){
 	fmt.Println("Beego Seesion init");
@@ -99,11 +91,39 @@ func (this *UserController) Get() {
 	this.Ctx.WriteString("GET: hello consumer login")
 }
 
+
+
+//  login Access
+//  params: 
+//     @ username string
+//	   @ password string
+//	return:
+//		successed:{sessionID:X, faildCnt:0,isLogin:true,UserInfo:{}}
+//		faild:{sessionID:x, faildCnt:x,isLogin:false,code:x,message:x,UserInfo:{}}
+type resultLogin struct {
+	SessionID	string	`json:sessionID`
+	FaildCnt	int		`json:faildCnt`
+	IsLogin		bool	`json:isLogin`
+	Code		string	`json:code`
+	Message		string	`json:message`
+	UserInfo	usersdb.User	`json:userInfo`
+	//Token
+
+}
+
 func (this *UserController) UserLogin() {
+	var	res = resultLogin{FaildCnt:0, IsLogin:false}
 	sess,err := globalSessions.SessionStart(this.Ctx.ResponseWriter, this.Ctx.Request)
 	defer sess.SessionRelease(this.Ctx.ResponseWriter)
 	if err != nil {
 		fmt.Println("set error,", err)
+		res.Code = errorCode.SessionStartError
+		res.Message = err.Error()
+		jsonRes,_  := json.Marshal(res)
+		// exit
+		this.Ctx.WriteString(string(jsonRes));
+
+		return
 	}
 
 	//ckeck user login info
@@ -111,9 +131,13 @@ func (this *UserController) UserLogin() {
 	req_passwd := this.GetString("password")
 	// find in mysql database with user
 	uinfo,err := globalUser.FindUser(req_username,"")
+	res.UserInfo = uinfo
 	var isAuth  bool = false
 	if err != nil {
-		this.Ctx.WriteString(err.Error());
+		res.Code = errorCode.LoginFaild
+		res.Message = err.Error()
+		jsonRes,_  := json.Marshal(res)
+		this.Ctx.WriteString(string(jsonRes));
 		return
 	}
 
@@ -122,6 +146,7 @@ func (this *UserController) UserLogin() {
 		isAuth = true
 	}else {
 		// password auth faild	
+		isAuth = false
 	}
 
 	var faildCnt int = 0
@@ -133,25 +158,47 @@ func (this *UserController) UserLogin() {
 	//fmt.Println(username)
 	if this.Ctx.Request.Method == "GET" {
 		fmt.Println("======")
+		// logout
+		sess.Set("username","")
+		sess.Set("isLogin",false)
+
 	} else {
 		sess.Set("username", req_username)
 		if !isAuth {
 			sess.Set("faildCnt", faildCnt + 1)
+			res.Code = errorCode.LoginFaild
+			res.Message = "password author error"
 		}else{
 			sess.Set("faildCnt", 0)
 		}
 		sess.Set("isLogin", isAuth)
 	}
-	username := sess.Get("username").(string)
-	isLogin := sess.Get("isLogin").(bool)
-	faildCnt = sess.Get("faildCnt").(int)
 
+	res.SessionID = sess.SessionID();
+	res.IsLogin = sess.Get（"isLogin").(bool)
+	res.faildCnt = sess.Get("faildCnt").(int)
 	var res = session_cookie{SessionID: sess.SessionID(),
 							Username: username,
 							 IsLogin: isLogin,
 							 FaildCnt: faildCnt}
- 	jsonRes,_ := json.Marshal(res)
+	jsonRes,_ := json.Marshal(res)
 	this.Ctx.WriteString(string(jsonRes))
+}
+
+//  sigin Access
+//  params: 
+//     @ username string
+//	   @ password string
+//	   @ Mail	  string
+//	   @ Gender	  string
+//	   @ head_photo	string	-->URL
+//	return:
+//		successed:{UserInfo:{}}
+//		faild:{code:x,message:x,UserInfo:{}}
+type resultSigin struct {
+	Code		string	`json:code`
+	Message		string	`json:message`
+	UserInfo	usersdb.User	`json:userInfo`
 }
 
 type user struct {
@@ -159,7 +206,6 @@ type user struct {
 	//Age    int    `valid:"Range(1, 140)"` // 1 <= Age <= 140，超出此范围即为不合法
 	Mail	string `valid:"Email; MaxSize(100)"` // Email字段需要符合邮箱格式，并且最大长度不能大于100个字符
 //	Mobile string `valid:"Mobile"` // Mobile必须为正确的手机号
-	//	IP     string `valid:"IP"` // IP必须为一个正确的IPv4地址
 }
 func (u *user) Valid(v *validation.Validation) {
 	if strings.Index(u.Name, "admin") != -1 {
@@ -169,22 +215,13 @@ func (u *user) Valid(v *validation.Validation) {
 }
 
 func (this *UserController) UserSigin() {
+	var res = resultSigin{}
 	var valid = validation.Validation{}
 	username := this.GetString("username")
 	password := this.GetString("password")
 	mail := this.GetString("mail")
 	gender := this.GetString("gender")
-	f,h,ferr := this.GetFile("head_photo")
-	if ferr != nil {
-		fmt.Println("getfile err ", ferr)
-	}
-	fmt.Println("filename:", h.Filename)
-	f.Close()
-	ferr = this.SaveToFile("UpLoadFile", "/home/licj/")
-	if ferr != nil {
-		fmt.Println("err:", ferr)
-	}
-	head_photo := ""
+	head_photo := this.GetString("head_photo")
 
 	//fmt.Printf("username=%s\npassword=%s\nmail=%s\ngender=%s\nhead_photo=%s\n",username,password,email,gender,head_photo)
 	u := user{
@@ -193,8 +230,11 @@ func (this *UserController) UserSigin() {
 			 }
 	_,err :=  valid.Valid(&u)
 	if err != nil{
-		fmt.Println(err)
-		this.Ctx.WriteString(err.Error())
+		res.Code = errorCode.MalformedArgument
+		res.Message = err.Error()
+		jsonRes := json.Marshal(res)
+		this.Ctx.WriteString(string(jsonRes))
+		return
 	}else{
 		var user = usersdb.User{Login:username,
 								FirstName:"",
@@ -204,12 +244,15 @@ func (this *UserController) UserSigin() {
 								Password:password,
 								HeadPhoto:head_photo}
 		uinfo,err  := globalUser.InsertUser(user)
+		res.UserInfo = uinfo
 		if err != nil {
-			this.Ctx.WriteString("user sigin error:" + err.Error())
-
+			res.Code = errorCode.SiginUsernameIsExist
+			res.Message = err.Error()
 		}else{
-			this.Ctx.WriteString("consumer sigin ok,uid=" + uinfo.ID)
+			//something
 		}
+		jsonRes := json.Marshal(res)
+		this.Ctx.WriteString(string(jsonRes))
 	}
 }
 
