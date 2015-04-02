@@ -16,5 +16,8 @@
 
  const	LoginFaild = "LoginFaild" string
  const	SiginUsernameIsExist = "SiginUsernameIsExist" string
+<<<<<<< HEAD
  const  MalformedArgument = "MalformedArgument" string
+=======
+>>>>>>> FETCH_HEAD
 

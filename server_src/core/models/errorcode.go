@@ -18,4 +18,7 @@
  const	SiginUsernameIsExist = "SiginUsernameIsExist" string
  const  MalformedArgument = "MalformedArgument" string
 
+<<<<<<< HEAD
  const	SessionStartError	= "SessionStartError" string
+=======
+>>>>>>> FETCH_HEAD
