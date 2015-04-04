@@ -24,7 +24,19 @@ gender:
 // Curl Test
 
  curl -c cookie_log -b cookie_log -d "username=li&password=123" http://localhost:8080/application/user/login
- curl -c cookie_log -b cookie_log -G http://localhost:8080/application/user/login
 
- curl -d "username=li&password=123&email=li@teset.com&head_photo=dsfasfdsadf&gender=male" http://localhost:8080/application/user/sigin
+ curl -c cookie_log -b cookie_log -G http://localhost:8080/application/user/login
+//绑定手机,之前需要登陆
+ curl -c cookie_log -b cookie_log -G http://localhost:8080/application/user/bindMobile?mobile=18208158923
+
+ curl -d "authCode=765432&mobile=18208158923" http://localhost:8080/application/user/bindMobile
+
+//注册用户
+ curl -d "username=li&password=123&mobile=18208158923&email=li@teset.com&head_photo=dsfasfdsadf&gender=male" http://localhost:8080/application/user/sigin
+
+//重置密码
+ curl -c cookie_log -b cookie_log -G http://localhost:8080/application/user/resetPassword?username=xx&newPassword=xxx
+
+ curl -d "authCode=765432" http://localhost:8080/application/user/resetPassword
+
 

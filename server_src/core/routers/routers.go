@@ -1,4 +1,3 @@
-
 /**
  *  Copyright 2015,
  *  Filename: routers.go
@@ -10,17 +9,18 @@
  *
  */
 
+package routers
 
- package routers
-
- import (
+import (
 	"../controllers"
 	"github.com/astaxie/beego"
- )
+)
 
- func init(){
-	beego.Router("/",&controllers.MainController{})
-	beego.Router("/application/user/login", &controllers.UserController{},"*:UserLogin")
-	beego.Router("/application/user/sigin", &controllers.UserController{},"post:UserSigin")
+func init() {
+	beego.Router("/", &controllers.MainController{})
+	beego.Router("/application/user/login", &controllers.UserController{}, "*:UserLogin")
+	beego.Router("/application/user/sigin", &controllers.UserController{}, "post:UserSigin")
+	beego.Router("/application/user/bindMobile", &controllers.UserController{}, "*:UserBindMobile")
+	beego.Router("/application/user/resetPassword", &controllers.UserController{}, "*:UserResetPassword")
 
- }
+}

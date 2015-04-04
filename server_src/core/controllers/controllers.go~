@@ -20,8 +20,10 @@ import (
 	"github.com/astaxie/beego/session"
 	"github.com/astaxie/beego/validation"
 	"strings"
+	"time"
 	//	"strconv"
-	"../models"
+	"../models/errorcode"
+	"../models/usersdb"
 	"reflect"
 )
 
@@ -179,7 +181,8 @@ func (this *UserController) UserLogin() {
 //  params:
 //     @ username string
 //	   @ password string
-//	   @ Mail	  string
+//	   @ Mobile	  string need
+//	   @ Mail	  string option
 //	   @ Gender	  string
 //	   @ head_photo	string	-->URL
 //	return:
@@ -194,8 +197,8 @@ type resultSigin struct {
 type user struct {
 	Name string `valid:"Required; Range(5,10)"` // Name 不能为空并且以Bee开头
 	//Age    int    `valid:"Range(1, 140)"` // 1 <= Age <= 140，超出此范围即为不合法
-	Mail string `valid:"Email; MaxSize(100)"` // Email字段需要符合邮箱格式，并且最大长度不能大于100个字符
-	//	Mobile string `valid:"Mobile"` // Mobile必须为正确的手机号
+	Mail   string `valid:"Email; MaxSize(100)"` // Email字段需要符合邮箱格式，并且最大长度不能大于100个字符
+	Mobile string `valid:"Mobile"`              // Mobile必须为正确的手机号
 }
 
 func (u *user) Valid(v *validation.Validation) {
@@ -207,19 +210,34 @@ func (u *user) Valid(v *validation.Validation) {
 
 func (this *UserController) UserSigin() {
 	var res = resultSigin{}
+	sess, err := globalSessions.SessionStart(this.Ctx.ResponseWriter, this.Ctx.Request)
+	defer sess.SessionRelease(this.Ctx.ResponseWriter)
+	if err != nil {
+		fmt.Println("set error,", err)
+		res.Code = errorCode.SessionStartError
+		res.Message = err.Error()
+		jsonRes, _ := json.Marshal(res)
+		// exit
+		this.Ctx.WriteString(string(jsonRes))
+
+		return
+	}
+
 	var valid = validation.Validation{}
 	username := this.GetString("username")
 	password := this.GetString("password")
+	mobile := this.GetString("mobile")
 	mail := this.GetString("mail")
 	gender := this.GetString("gender")
 	head_photo := this.GetString("head_photo")
 
 	//fmt.Printf("username=%s\npassword=%s\nmail=%s\ngender=%s\nhead_photo=%s\n",username,password,email,gender,head_photo)
 	u := user{
-		Name: username,
-		Mail: mail,
+		Name:   username,
+		Mail:   mail,
+		Mobile: mobile,
 	}
-	_, err := valid.Valid(&u)
+	_, err = valid.Valid(&u)
 	if err != nil {
 		res.Code = errorCode.MalformedArgument
 		res.Message = err.Error()
@@ -230,10 +248,13 @@ func (this *UserController) UserSigin() {
 		var user = usersdb.User{Login: username,
 			FirstName: "",
 			LastName:  "",
+			Mobile:    "", // 暂时不写入用户数据库，等待验证通过
 			Mail:      mail,
 			Gender:    gender,
 			Password:  password,
-			HeadPhoto: head_photo}
+			HeadPhoto: head_photo,
+			//新用户未激活，激活需要短信验证
+			Active: false}
 		uinfo, err := globalUser.InsertUser(user)
 		res.UserInfo = uinfo
 		if err != nil {
@@ -241,8 +262,208 @@ func (this *UserController) UserSigin() {
 			res.Message = err.Error()
 		} else {
 			//something
+			authCode := ""                                   //TODO: 产生验证码
+			acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
+			sess.Set("username", uinfo.Login)
+			sess.Set("mobile", mobile)           // 会话记录绑定手机号码
+			sess.Set("authCode", authCode)       //会话记录认证码
+			sess.Set("authCodeExpire", acExpire) //设置认证码过期时间
 		}
 		jsonRes, _ := json.Marshal(res)
 		this.Ctx.WriteString(string(jsonRes))
 	}
+}
+
+//  bind mobile Access
+//  params:
+//     @ mobile string
+//	   @ authCode string
+//	return:
+//		successed:{}
+//		faild:{}
+type resultBindMobile struct {
+	Code     string       `json:code`
+	Message  string       `json:message`
+	UserInfo usersdb.User `json:userInfo`
+	//Token
+
+}
+
+func (this *UserController) UserBindMobile() {
+	var res = resultBindMobile{}
+	sess, err := globalSessions.SessionStart(this.Ctx.ResponseWriter, this.Ctx.Request)
+	defer sess.SessionRelease(this.Ctx.ResponseWriter)
+	if err != nil {
+		fmt.Println("set error,", err)
+		res.Code = errorCode.SessionStartError
+		res.Message = err.Error()
+		jsonRes, _ := json.Marshal(res)
+		this.Ctx.WriteString(string(jsonRes))
+
+		return
+	}
+	if this.Ctx.Request.Method == "GET" {
+		//
+		mobile := this.GetString("mobile")
+		authCode := ""                                   //TODO: 产生验证码
+		acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
+		sess.Set("mobile", mobile)                       // 会话记录绑定手机号码
+		sess.Set("authCode", authCode)                   //会话记录认证码
+		sess.Set("authCodeExpire", acExpire)             //设置认证码过期时间
+		//TODO: send auth code through mobile message
+
+	} else if this.Ctx.Request.Method == "POST" {
+		//check authCode vilidate
+
+		current_time := time.Now().Unix()
+		if current_time > sess.Get("authCodeExpire").(int64) {
+			res.Code = errorCode.AuthFaild
+			res.Message = "The Auth Code already expired"
+			jsonRes, _ := json.Marshal(res)
+			this.Ctx.WriteString(string(jsonRes))
+			return
+		}
+		theAuthCode := this.GetString("authCode")
+		if theAuthCode == sess.Get("autchCode") {
+			// auth sucessed
+			// modify user database
+			err = globalUser.BindMobileForUser(sess.Get("username").(string), sess.Get("mobile").(string))
+			if err != nil {
+				res.Code = errorCode.BindMobileFaild
+				res.Message = err.Error()
+
+			}
+			jsonRes, _ := json.Marshal(res)
+			this.Ctx.WriteString(string(jsonRes))
+			return
+
+		} else {
+			// auth faild
+			res.Code = errorCode.AuthFaild
+			res.Message = "The Auth Code is Not Match"
+			jsonRes, _ := json.Marshal(res)
+			this.Ctx.WriteString(string(jsonRes))
+			return
+		}
+	} else {
+		// don't support
+		res.Code = errorCode.MethodNotSupport
+		res.Message = "Reset password only support GET or POST method"
+
+		jsonRes, _ := json.Marshal(res)
+		this.Ctx.WriteString(string(jsonRes))
+		return
+	}
+
+}
+
+//  user reset password Access
+//  params:
+//     @ username string
+//	   @ newPassword string
+//	return:
+//		successed:{}
+//		faild:{}
+type resultResetPwd struct {
+	Code     string       `json:code`
+	Message  string       `json:message`
+	UserInfo usersdb.User `json:userInfo`
+	//Token
+
+}
+
+func (this *UserController) UserResetPassword() {
+	var res = resultResetPwd{}
+	sess, err := globalSessions.SessionStart(this.Ctx.ResponseWriter, this.Ctx.Request)
+	defer sess.SessionRelease(this.Ctx.ResponseWriter)
+	if err != nil {
+		fmt.Println("set error,", err)
+		res.Code = errorCode.SessionStartError
+		res.Message = err.Error()
+		jsonRes, _ := json.Marshal(res)
+		// exit
+		this.Ctx.WriteString(string(jsonRes))
+
+		return
+	}
+	//check username
+	username := this.GetString("username")
+	newPassword := this.GetString("newPassword")
+
+	if username == "" || newPassword == "" {
+		res.Code = errorCode.MalformedArgument
+		res.Message = err.Error()
+		jsonRes, _ := json.Marshal(res)
+		this.Ctx.WriteString(string(jsonRes))
+		return
+
+	}
+	if this.Ctx.Request.Method == "GET" {
+		// Find This User
+		uinfo, err := globalUser.FindUser(username, "")
+		if err != nil {
+			res.Code = errorCode.FindUserFaild
+			res.Message = err.Error()
+			jsonRes, _ := json.Marshal(res)
+			this.Ctx.WriteString(string(jsonRes))
+
+			return
+		}
+		mobile := uinfo.Mobile
+		uid := uinfo.ID
+		if mobile == "" {
+			res.Code = errorCode.ResetPasswordFaild
+			res.Message = "this user is not bind mobile"
+			jsonRes, _ := json.Marshal(res)
+			this.Ctx.WriteString(string(jsonRes))
+
+			return
+		}
+		// authrization user
+		// TODO :  生成临时的认证资源，或者验证码，下发至认证手机或邮箱
+		authCode := ""                                   //TODO: 产生验证码
+		acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
+		//sess.Set("mobile", mobile)                       // 会话记录绑定手机号码
+		sess.Set("uid", uid)
+		sess.Set("username", username)       //会话记录登陆名
+		sess.Set("newPassword", newPassword) //会话记录新密码
+		sess.Set("authCode", authCode)       //会话记录认证码
+		sess.Set("authCodeExpire", acExpire) //设置认证码过期时间
+		//TODO: send auth code through mobile message
+
+		jsonRes, _ := json.Marshal(res)
+		this.Ctx.WriteString(string(jsonRes))
+		return
+	} else if this.Ctx.Request.Method == "POST" {
+		//
+		theAuthCode := this.GetString("authCode")
+		if theAuthCode == sess.Get("authCode") {
+			//auth successed,and update password
+			err = globalUser.UpdateUser(sess.Get("uid").(string), "", "", "", "", "", sess.Get("newPassword").(string))
+			if err != nil {
+				res.Code = errorCode.ResetPasswordFaild
+				res.Message = err.Error()
+			} else {
+				//TODO something
+			}
+
+		} else {
+			//auth faild
+			res.Code = errorCode.ResetPasswordFaild
+			res.Message = "The Auth Code is Not Match"
+
+		}
+		jsonRes, _ := json.Marshal(res)
+		this.Ctx.WriteString(string(jsonRes))
+	} else {
+		// don't support
+		res.Code = errorCode.MethodNotSupport
+		res.Message = "Reset password only support GET or POST method"
+
+		jsonRes, _ := json.Marshal(res)
+		// exit
+		this.Ctx.WriteString(string(jsonRes))
+		return
+	}
+
 }

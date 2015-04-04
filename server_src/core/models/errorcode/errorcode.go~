@@ -11,10 +11,14 @@
 package errorCode
 
 import (
-	"fmt"
+//"fmt"
 )
 
 const LoginFaild = "LoginFaild"
 const SiginUsernameIsExist = "SiginUsernameIsExist"
 const MalformedArgument = "MalformedArgument"
 const SessionStartError = "SessionStartError"
+const MethodNotSupport = "MethodNotSupport"
+const AuthFaild = "AuthFaild"
+const BindMobileFaild = "BindMobileFaild"
+const FindUserFaild = "findUserFaild"
