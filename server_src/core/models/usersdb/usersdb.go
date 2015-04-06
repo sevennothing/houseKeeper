@@ -83,6 +83,7 @@ func (mu *MysqlUser) connectInit() *sql.DB {
 	return db
 }
 
+/*
 func generateUid() (string, error) {
 	b := make([]byte, uidLength)
 	n, err := rand.Read(b)
@@ -91,11 +92,12 @@ func generateUid() (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
+*/
 
 func (mu *MysqlUser) InsertUser(uinfo User) (User, error) {
 	c := mu.connectInit()
 	defer c.Close()
-	uinfo.ID, _ = generateUid()
+	//uinfo.ID, _ = generateUid()
 	lastLoginOn := time.Now()
 	updatedOn := time.Now()
 	createdOn := time.Now()

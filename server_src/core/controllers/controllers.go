@@ -23,12 +23,14 @@ import (
 	"time"
 	//	"strconv"
 	"../models/errorcode"
+	"../models/tools"
 	"../models/usersdb"
 	"reflect"
 )
 
 var globalSessions *session.Manager
 var globalUser *usersdb.MysqlUser
+var globalTool *tools.HkTool
 
 type sessionConfig struct {
 	CookieName        string `json:cookieName`
@@ -255,6 +257,8 @@ func (this *UserController) UserSigin() {
 			HeadPhoto: head_photo,
 			//新用户未激活，激活需要短信验证
 			Active: false}
+		user.ID = globalTool.GenerateID16() // 生成16位唯一字符串ID
+
 		uinfo, err := globalUser.InsertUser(user)
 		res.UserInfo = uinfo
 		if err != nil {
@@ -262,7 +266,7 @@ func (this *UserController) UserSigin() {
 			res.Message = err.Error()
 		} else {
 			//something
-			authCode := ""                                   //TODO: 产生验证码
+			authCode := globalTool.GenerateRandNumber(6)     //产生6位数验证码
 			acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
 			sess.Set("username", uinfo.Login)
 			sess.Set("mobile", mobile)           // 会话记录绑定手机号码
@@ -305,7 +309,7 @@ func (this *UserController) UserBindMobile() {
 	if this.Ctx.Request.Method == "GET" {
 		//
 		mobile := this.GetString("mobile")
-		authCode := ""                                   //TODO: 产生验证码
+		authCode := globalTool.GenerateRandNumber(6)     //产生6位数验证码
 		acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
 		sess.Set("mobile", mobile)                       // 会话记录绑定手机号码
 		sess.Set("authCode", authCode)                   //会话记录认证码
@@ -422,7 +426,7 @@ func (this *UserController) UserResetPassword() {
 		}
 		// authrization user
 		// TODO :  生成临时的认证资源，或者验证码，下发至认证手机或邮箱
-		authCode := ""                                   //TODO: 产生验证码
+		authCode := globalTool.GenerateRandNumber(6)     //产生6位数验证码
 		acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
 		//sess.Set("mobile", mobile)                       // 会话记录绑定手机号码
 		sess.Set("uid", uid)
