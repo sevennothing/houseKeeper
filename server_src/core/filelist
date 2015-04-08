@@ -1,6 +1,15 @@
 routers/routers.go
 main.go
-controllers/controllers.go
 models/usersdb/usersdb.go
 models/errorcode/errorcode.go
+
 models/tools/tools.go
+models/tools/readJson.go
+
+models/bdb/income_expend.go
+models/bdb/dbInit.go
+conf/db.conf
+
+controllers/controllers.go
+controllers/main_controllers.go
+controllers/user_controller.go

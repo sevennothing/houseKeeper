@@ -32,9 +32,9 @@
 package usersdb
 
 import (
-	"crypto/rand"
+	//	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
+	//	"encoding/hex"
 	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"

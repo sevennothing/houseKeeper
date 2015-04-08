@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 	//	"strconv"
+	_ "../models/bdb"
 	"../models/errorcode"
 	"../models/tools"
 	"../models/usersdb"
@@ -71,20 +72,8 @@ func init() {
 
 }
 
-type MainController struct {
-	beego.Controller
-}
-
 type UserController struct {
 	beego.Controller
-}
-
-func (this *MainController) Post() {
-	this.Ctx.WriteString("hello post")
-}
-
-func (this *MainController) Get() {
-	this.Ctx.WriteString("hello get")
 }
 
 func (this *UserController) Get() {
@@ -266,7 +255,7 @@ func (this *UserController) UserSigin() {
 			res.Message = err.Error()
 		} else {
 			//something
-			authCode := globalTool.GenerateRandNumber(6)     //产生6位数验证码
+			authCode, _ := globalTool.GenerateRandNumber(6)  //产生6位数验证码
 			acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
 			sess.Set("username", uinfo.Login)
 			sess.Set("mobile", mobile)           // 会话记录绑定手机号码
@@ -309,7 +298,7 @@ func (this *UserController) UserBindMobile() {
 	if this.Ctx.Request.Method == "GET" {
 		//
 		mobile := this.GetString("mobile")
-		authCode := globalTool.GenerateRandNumber(6)     //产生6位数验证码
+		authCode, _ := globalTool.GenerateRandNumber(6)  //产生6位数验证码
 		acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
 		sess.Set("mobile", mobile)                       // 会话记录绑定手机号码
 		sess.Set("authCode", authCode)                   //会话记录认证码
@@ -426,7 +415,7 @@ func (this *UserController) UserResetPassword() {
 		}
 		// authrization user
 		// TODO :  生成临时的认证资源，或者验证码，下发至认证手机或邮箱
-		authCode := globalTool.GenerateRandNumber(6)     //产生6位数验证码
+		authCode, _ := globalTool.GenerateRandNumber(6)  //产生6位数验证码
 		acExpire := time.Now().Unix() + (10 * 60 * 1000) // 有效期为10分钟
 		//sess.Set("mobile", mobile)                       // 会话记录绑定手机号码
 		sess.Set("uid", uid)

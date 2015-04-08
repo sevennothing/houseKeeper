@@ -1,2 +1,9 @@
 *~
 *.swp
+
+models/tools/*.swp
+models/tools/*~
+
+models/usersdb/*.swp
+models/usersdb/*~
+
